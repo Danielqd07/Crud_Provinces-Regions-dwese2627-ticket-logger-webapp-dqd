@@ -1,0 +1,19 @@
+services:
+  mariadb:
+    image: mariadb:11
+    container_name: dwese-mariadb-ticket-logger-webapp
+
+    environment:
+      MARIADB_ROOT_PASSWORD: root_password
+      MARIADB_DATABASE: ticket-logger-webapp
+      MARIADB_USER: myuser
+      MARIADB_PASSWORD: mypassword
+
+    ports:
+      - "3307:3306"
+
+    volumes:
+      - mariadb_ticket_logger_webapp_data:/var/lib/mysql
+
+volumes:
+  mariadb_ticket_logger_webapp_data:
