@@ -1,19 +1,79 @@
+
 services:
-  mariadb:
-    image: mariadb:11
-    container_name: dwese-mariadb-ticket-logger-webapp
+
+  # BASE DE DATOS MARIADB
+  db:
+    image: mariadb:latest
 
     environment:
-      MARIADB_ROOT_PASSWORD: root_password
-      MARIADB_DATABASE: ticket-logger-webapp
-      MARIADB_USER: myuser
-      MARIADB_PASSWORD: mypassword
+      - MARIADB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MARIADB_DATABASE=${DB_DATABASE}
+      - MARIADB_USER=${DB_USER}
+      - MARIADB_PASSWORD=${DB_PASSWORD}
 
     ports:
       - "3307:3306"
 
     volumes:
-      - mariadb_ticket_logger_webapp_data:/var/lib/mysql
+      - db_data:/var/lib/mysql
 
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+
+  # APLICACION SPRING BOOT
+  ticket-logger-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: ticket-logger-app
+
+    env_file:
+      - .env
+
+    environment:
+      DB_URL: ${DB_URL}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DRIVER: ${DB_DRIVER}
+      APP_UPLOAD_PATH: ${APP_UPLOAD_PATH}
+      APP_PORT: ${APP_PORT}
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    volumes:
+      - app_uploads:/app/uploads
+
+
+  # PROXY INVERSO NGINX
+  proxy:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+
+    container_name: ticket-logger-proxy
+
+    depends_on:
+      ticket-logger-app:
+        condition: service_started
+
+    ports:
+      - "8081:80"
+      - "8443:443"
+
+    volumes:
+      - certs:/etc/nginx/certs:rw
+
+
+# VOLUMENES PERSISTENTES
 volumes:
-  mariadb_ticket_logger_webapp_data:
+  db_data:
+  app_uploads:
+  certs:

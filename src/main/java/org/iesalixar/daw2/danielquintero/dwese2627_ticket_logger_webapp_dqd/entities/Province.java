@@ -21,7 +21,8 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "provinces")
-public class Province {
+public class
+Province {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
